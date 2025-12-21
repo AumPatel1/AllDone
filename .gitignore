@@ -1,0 +1,39 @@
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+jobspy-venv/
+*.venv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.venv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.csv
+dist/
+build/
+*.egg-info/
