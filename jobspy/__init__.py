@@ -1,7 +1,11 @@
+'''
+Added dictionary output format to the scrape_jobs functions and dicts.
+'''
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Tuple
+from typing import Tuple, Literal
 
 import pandas as pd
 
@@ -49,11 +53,13 @@ def scrape_jobs(
     enforce_annual_salary: bool = False,
     verbose: int = 0,
     user_agent: str = None,
+    output_format: Literal["dataframe", "dict"] = "dataframe",
     **kwargs,
-) -> pd.DataFrame:
+) -> pd.DataFrame | list[dict]:
     """
     Scrapes job data from job boards concurrently
-    :return: Pandas DataFrame containing job data
+    :param output_format: Output format - "dataframe" (default) or "dict" (returns list of dicts, one per job)
+    :return: Job data in requested format (DataFrame or list of dicts)
     """
     SCRAPER_MAPPING = {
         Site.LINKEDIN: LinkedIn,
@@ -214,11 +220,20 @@ def scrape_jobs(
         jobs_df = jobs_df[desired_order]
 
         # Step 4: Sort the DataFrame as required
-        return jobs_df.sort_values(
+        jobs_df = jobs_df.sort_values(
             by=["site", "date_posted"], ascending=[True, False]
         ).reset_index(drop=True)
+        
+        # Convert to requested output format
+        if output_format == "dict":
+            return jobs_df.to_dict('records')  # List of dicts (one per job)
+        else:  # output_format == "dataframe"
+            return jobs_df
     else:
-        return pd.DataFrame()
+        if output_format == "dict":
+            return []
+        else:
+            return pd.DataFrame()
 
 
 # Add BDJobs to __all__
