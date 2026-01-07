@@ -1,0 +1,28 @@
+# prompts.py
+
+def summary_prompt(summary, job_analysis):
+    return f"""
+Rewrite this resume summary to better match the job.
+DO NOT fabricate experience.
+
+Original summary:
+{summary}
+
+Job keywords:
+{job_analysis["keywords"]}
+
+Required skills:
+{job_analysis["required_skills"]}
+"""
+
+def bullet_prompt(bullet, job_analysis):
+    return f"""
+Rewrite this resume bullet to better align with the job.
+Preserve truth. Do not exaggerate.
+
+Bullet:
+{bullet}
+
+Job keywords:
+{job_analysis["keywords"]}
+"""
