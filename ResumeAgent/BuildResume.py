@@ -9,6 +9,10 @@ from .ResumeLoader import load_resume
 from .JobDecriptionAnalyzer import JobDescriptionAnalyzer
 from .RewriteResume import rewrite_resume_data
 from .Exporter import build_docx
+from .exceptions import ResumeLoadError, JobAnalysisError, ResumeExportError, ValidationError
+from .utils import setup_logger, validate_resume_data, validate_file_path, ensure_directory
+
+logger = setup_logger("ResumeAgent.BuildResume")
 
 
 class BuildResume:
@@ -39,11 +43,17 @@ class BuildResume:
             Dictionary containing parsed resume data
             
         Raises:
-            FileNotFoundError: If PDF file doesn't exist
-            ValueError: If PDF is invalid
+            ResumeLoadError: If resume loading fails
         """
-        self.resume_data = load_resume(pdf_path)
-        return self.resume_data
+        try:
+            validated_path = validate_file_path(pdf_path, must_exist=True, extension='.pdf')
+            self.resume_data = load_resume(validated_path)
+            validate_resume_data(self.resume_data)
+            logger.info(f"Successfully loaded resume from {pdf_path}")
+            return self.resume_data
+        except Exception as e:
+            logger.error(f"Failed to load resume from {pdf_path}: {e}")
+            raise ResumeLoadError(f"Failed to load resume: {e}") from e
     
     def analyze_job(self, job_description: str) -> Optional[Dict[str, Any]]:
         """
@@ -54,11 +64,21 @@ class BuildResume:
             
         Returns:
             Dictionary with structured job analysis or None if analysis fails
+            
+        Raises:
+            JobAnalysisError: If job analysis fails
         """
         if self.analyzer is None:
-            raise ValueError("LLM client is required for job analysis. Initialize BuildResume with llm_client.")
+            raise JobAnalysisError("LLM client is required for job analysis. Initialize BuildResume with llm_client.")
         
-        return self.analyzer._analyze_single_description(job_description)
+        if not job_description or not job_description.strip():
+            raise ValidationError("job_description cannot be empty")
+        
+        try:
+            return self.analyzer._analyze_single_description(job_description)
+        except Exception as e:
+            logger.error(f"Failed to analyze job description: {e}")
+            raise JobAnalysisError(f"Job analysis failed: {e}") from e
     
     def analyze_jobs(self, jobs: List[Dict]) -> List[Dict]:
         """
@@ -136,14 +156,22 @@ class BuildResume:
             resume_data: Optional resume data dictionary (uses loaded resume if not provided)
             
         Raises:
-            ValueError: If resume data not available
+            ResumeExportError: If export fails
+            ValidationError: If resume data not available
         """
         data_to_export = resume_data or self.resume_data
         
         if data_to_export is None:
-            raise ValueError("Resume data not loaded. Call load_resume_from_pdf() first or provide resume_data.")
+            raise ValidationError("Resume data not loaded. Call load_resume_from_pdf() first or provide resume_data.")
         
-        build_docx(data_to_export, output_path)
+        try:
+            validate_resume_data(data_to_export)
+            validated_path = validate_file_path(output_path, extension='.docx')
+            build_docx(data_to_export, validated_path)
+            logger.info(f"Successfully exported resume to {validated_path}")
+        except Exception as e:
+            logger.error(f"Failed to export resume: {e}")
+            raise ResumeExportError(f"Resume export failed: {e}") from e
     
     def get_resume_data(self) -> Optional[Dict[str, Any]]:
         """
