@@ -37,3 +37,10 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Sensitive files
+ResumeAgent/ques.txt
+**/ques.txt
+**/*token*
+**/*secret*
+**/*password*
